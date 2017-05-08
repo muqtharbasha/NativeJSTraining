@@ -18,34 +18,33 @@ function search() {
         });
         return getVideoStatics(videoIds);
     }).then(function (response) {
-        var videoStatics = JSON.parse(response);
-        videoList.items.forEach(function (item) {
-            videoStatics.items.forEach(function (stats) {
-                if (stats.id == item.id.videoId) {
-                    item.statistics = stats.statistics;
-                    return;
-                }
-            });
-        });
+        // var videoStatics = JSON.parse(response);
+        // videoList.items.forEach(function (item) {
+        //     videoStatics.items.forEach(function (stats) {
+        //         if (stats.id == item.id.videoId) {
+        //             item.statistics = stats.statistics;
+        //             return;
+        //         }
+        //     });
+        // });
 
         onSearchResponse(videoList);
     });
 }
 
-function getVideoStatics(Ids) {
+function getVideoStatics(videoIds) {
     return getVideosApi(data.STATISTICS_API + '&part=statistics,snippet&id=' + videoIds.join());
 }
 
 //Binds api data to html elements
-function onSearchResponse(response) {
+function onSearchResponse(searchResultsList) {
     options.totalItems = [];
-    var tempWrapper = document.querySelector('#searchWrapperTemplate'),
-        container = tempWrapper.content.querySelector("#container"),
-        tiles = container.querySelector('.tiles'),
-        tempDivElement = document.getElementById("container");
-    searchResult = document.importNode(tempWrapper.content, true);
+    clearElementsData();
 
-    var searchResultsList = response;
+    var searchResultsWrapper = document.createElement('div');
+    searchResultsWrapper.setAttribute('id', 'container');
+    var tiles = document.createElement('ul');
+    tiles.classList.add('tiles');
 
     while (tiles.hasChildNodes()) {
         tiles.removeChild(tiles.lastChild);
@@ -53,33 +52,34 @@ function onSearchResponse(response) {
 
     searchResultsList.items.forEach(function (item) {
         options.totalItems.push(item);
-        tiles.appendChild(createTiles(createDataModel(item)));
+        tiles.appendChild(createTiles(item));
     });
 
-    if (tempDivElement) {
-        tempDivElement.parentElement.removeChild(tempDivElement);
-    }
+    searchResultsWrapper.appendChild(tiles);
+    document.body.appendChild(searchResultsWrapper);
 
-    document.body.appendChild(searchResult);
     initiatePaging();
 }
 
-function createDataModel(item) {
-    //store each JSON value in a variable
-    var myTitleData = {
+//Clears data from html elements
+function clearElementsData() {
+    var elem = document.getElementById("container");
+    if (elem) {
+        elem.parentElement.removeChild(elem);
+    }
+}
+
+function createTiles(item) {
+
+    var videoData = {
         publishedAt: item.snippet.publishedAt,
         channelId: item.snippet.channelId,
         title: item.snippet.title,
         description: item.snippet.description,
         thumbnails_default: item.snippet.thumbnails.default.url,
-        viewsCount: item.statistics ? item.statistics.viewCount :0,
+        viewsCount: item.statistics ? item.statistics.viewCount : 0,
         videoID: item.id.videoId
     }
-    return myTitleData;
-}
-
-function createTiles(item) {
-
     var tmpl = document.querySelector('#mytemplate'),
         clonedEle = document.importNode(tmpl.content, true);
 
@@ -90,22 +90,22 @@ function createTiles(item) {
         descriptionEle = clonedEle.querySelector('.description'),
         viewsCount = clonedEle.querySelector('.viewsCount')
 
-    tileEle.appendChild(document.createTextNode(item.title));
-    videoEle.setAttribute("href", "http://www.youtube.com/watch?v=" + item.videoID);
-    imgEle.setAttribute("src", item.thumbnails_default);
-    viewsCount.appendChild(document.createTextNode(item.viewsCount));
-    publishedAtEle.appendChild(document.createTextNode(item.publishedAt));
-    descriptionEle.appendChild(document.createTextNode(item.description));
+    tileEle.appendChild(document.createTextNode(videoData.title));
+    videoEle.setAttribute("href", "http://www.youtube.com/watch?v=" + videoData.videoID);
+    imgEle.setAttribute("src", videoData.thumbnails_default);
+    viewsCount.appendChild(document.createTextNode(videoData.viewsCount));
+    publishedAtEle.appendChild(document.createTextNode(videoData.publishedAt));
+    descriptionEle.appendChild(document.createTextNode(videoData.description));
 
     return clonedEle;
 }
 
 function displayTiles() {
     var container = document.getElementById("container"),
-     prePageIndex = startIndex;
-        if(container){
-            var tiles = container.querySelector('.tiles');
-        }
+        prePageIndex = startIndex;
+    if (container) {
+        var tiles = container.querySelector('.tiles');
+    }
     startIndex = (options.currentPageIndex * options.pageSize);
     if (startIndex > options.totalItems.length) {
         startIndex = 0;
